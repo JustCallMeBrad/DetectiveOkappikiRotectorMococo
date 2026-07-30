@@ -1,3 +1,4 @@
+~~~
 ~~~~~~ Disclaimer! ~~~~~~
 
 DO NOT use this plugin to harass, make fun of, or attack anyone.

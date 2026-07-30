@@ -10,6 +10,8 @@ Mococo (TASE): https://moco-co.org/terms
 
 Violation of any of the Terms of Use/Terms of Service(s) will result in your access to the plugin being revoked, with your Discord ID being blacklisted server-side, meaning you won't be able to change it by editing it in your DORM's code.
 
+We are not officially endorsed by TASE/Mococo and/or Rotector.
+
 ~~~~~~ Intro ~~~~~~
 
 Detective Okappiki Rotector Mococo, in short DORM is a plugin developed by the creator of the Discord Bot known as "Detective Okappiki", DullBrad (https://okappiki.com/)

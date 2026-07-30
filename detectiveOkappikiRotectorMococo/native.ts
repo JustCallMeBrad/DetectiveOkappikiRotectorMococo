@@ -6,5 +6,5 @@
 
 import { CspPolicies } from "@main/csp";
 
-// We use fallback arrays to prevent overriding any existing rules for the domain
+// fyi, we use this so that discord doesn't get blocked cuz of my domain
 CspPolicies["okappiki.com"] = [...(CspPolicies["okappiki.com"] || []), "connect-src"];

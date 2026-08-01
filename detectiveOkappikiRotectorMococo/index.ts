@@ -6,9 +6,10 @@
 
 import { addProfileBadge, ProfileBadge, removeProfileBadge } from "@api/Badges";
 import { addMessageDecoration, removeMessageDecoration } from "@api/MessageDecorations";
+import { definePluginSettings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalRoot, ModalSize, openModal } from "@utils/modal";
-import definePlugin from "@utils/types";
+import definePlugin, { OptionType } from "@utils/types";
 import { Parser, React } from "@webpack/common";
 
 const logger = new Logger("DORM");
@@ -18,30 +19,72 @@ const listeners = new Set<(userId?: string) => void>();
 
 const API_BASE = "https://okappiki.com/backend/api.php";
 
-const COLORS = {
-    creator: "#FDE792",
-    loading: "#6c757d",
-    flagged: "#f23f42",
-    clean: "#3ba55c"
-};
+const settings = definePluginSettings({
+    badgeSize: {
+        type: OptionType.NUMBER,
+        description: "Badge text size (in pixels)",
+        default: 11
+    },
+    badgeColorLoading: {
+        type: OptionType.STRING,
+        description: "Badge color that displays when the plugin is loading the result",
+        default: "#6c757d"
+    },
+    badgeColorUnchecked: {
+        type: OptionType.STRING,
+        description: "Badge color that displays when a user hasn't been checked yet",
+        default: "#4f545c"
+    },
+    badgeColorClean: {
+        type: OptionType.STRING,
+        description: "Badge color that displays when a user is not flagged",
+        default: "#3ba55c"
+    },
+    badgeColorFlagged: {
+        type: OptionType.STRING,
+        description: "Badge color that displays when a user is flagged",
+        default: "#f23f42"
+    },
+    badgeColorCreator: {
+        type: OptionType.STRING,
+        description: "my badge color!!",
+        default: "#FDE792"
+    },
+    labelLoading: {
+        type: OptionType.STRING,
+        description: "Badge text that displays when the plugin is loading the result",
+        default: "LOADING..."
+    },
+    labelUnchecked: {
+        type: OptionType.STRING,
+        description: "Badge text that displays when a user is yet to have been checked",
+        default: "NOT CHECKED!"
+    },
+    labelClean: {
+        type: OptionType.STRING,
+        description: "Badge text that displays when a user is not flagged",
+        default: "NOT FLAGGED!"
+    },
+    labelFlagged: {
+        type: OptionType.STRING,
+        description: "Badge text that displays when a user is flagged",
+        default: "FLAGGED!"
+    },
+    labelCreator: {
+        type: OptionType.STRING,
+        description: "hi i made this!!",
+        default: "DORM CREATOR"
+    },
+    modalTextColor: {
+        type: OptionType.STRING,
+        description: "Modal text color (Leave blank for it to match your default discord theme, can be buggy due to Vencord's custom CSS)",
+        default: ""
+    }
+});
 
 function updateCacheAndNotify(userId: string, data: any) {
     flagCache.set(userId, data);
     listeners.forEach(cb => cb(userId));
-}
-
-function getBadgeColor(isCreator: boolean, isLoading: boolean, isFlagged: boolean) {
-    if (isCreator) return COLORS.creator;
-    if (isLoading) return COLORS.loading;
-    if (isFlagged) return COLORS.flagged;
-    return COLORS.clean;
-}
-
-function getBadgeLabel(isLoading: boolean, isCreator: boolean, isFlagged: boolean) {
-    if (isLoading) return "LOADING...";
-    if (isCreator) return "DORM CREATOR";
-    if (isFlagged) return "FLAGGED!";
-    return "NOT FLAGGED!";
 }
 
 const APPEAL_LINKS = {
@@ -66,9 +109,7 @@ function runFullCheck(userId: string) {
         .then(data => {
             if (!data.success) return null;
 
-            const anyFlagged = data.okappiki?.flagged || data.rotector?.flagged || data.mococo?.flagged;
-            const result = anyFlagged ? data : null;
-
+            const result = { ...data, checked: true };
             updateCacheAndNotify(userId, result);
             return result;
         })
@@ -78,9 +119,29 @@ function runFullCheck(userId: string) {
         });
 }
 
+function formatLastChecked(isoString: string | undefined) {
+    if (!isoString) return null;
+
+    const checkedDate = new Date(isoString);
+    if (isNaN(checkedDate.getTime())) return null;
+
+    const ageMs = Date.now() - checkedDate.getTime();
+    const ageDays = ageMs / (1000 * 60 * 60 * 24);
+
+    let color = "#3ba55c";
+    if (ageDays >= 30) color = "#f23f42";
+    else if (ageDays >= 7) color = "#faa61a";
+
+    return { text: checkedDate.toLocaleString(), color };
+}
+
 function DormModalContent({ userId, onClose, transitionState }: any) {
     const [data, setData] = React.useState<any>(flagCache.get(userId) ?? null);
     const [checking, setChecking] = React.useState(false);
+    const { modalTextColor } = settings.use(["modalTextColor"]);
+
+    const textColor = modalTextColor || "var(--text-normal)";
+    const lastChecked = formatLastChecked(data?.last_updated);
 
     function handleRunCheck() {
         setChecking(true);
@@ -95,7 +156,7 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
 
     let body: React.ReactNode;
     if (isCreator) {
-        body = React.createElement("div", { style: { color: "var(--text-normal)" } }, "hi i made this thing");
+        body = React.createElement("div", { style: { color: textColor } }, "hi i made this thing");
     } else if (segments.length > 0) {
         body = segments.map((segment, i) =>
             React.createElement("div", {
@@ -106,8 +167,8 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
                     borderBottom: i < segments.length - 1 ? "1px solid var(--background-modifier-accent)" : "none"
                 }
             },
-                React.createElement("div", { style: { fontWeight: "bold", marginBottom: "4px", color: "var(--header-primary)" } }, segment.source),
-                React.createElement("div", { style: { whiteSpace: "pre-wrap", marginBottom: "8px", color: "var(--text-normal)" } }, Parser.parse(segment.reason)),
+                React.createElement("div", { style: { fontWeight: "bold", marginBottom: "4px", color: textColor } }, segment.source),
+                React.createElement("div", { style: { whiteSpace: "pre-wrap", marginBottom: "8px", color: textColor } }, Parser.parse(segment.reason)),
                 React.createElement("a", {
                     href: segment.appealUrl || undefined,
                     target: "_blank",
@@ -128,7 +189,7 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
             )
         );
     } else {
-        body = React.createElement("div", { style: { color: "var(--text-normal)" } },
+        body = React.createElement("div", { style: { color: textColor } },
             Parser.parse("No flags found across **D**etective **O**kappiki, **R**otector, or **M**ococo.")
         );
     }
@@ -142,10 +203,20 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
                 width: "100%"
             }
         },
-            React.createElement("div", { style: { fontWeight: "bold", fontSize: "16px", color: "var(--header-primary)" } }, `DORM Flag Status — ${userId}`),
+            React.createElement("div", { style: { fontWeight: "bold", fontSize: "16px", color: textColor } }, `DORM Flag Status — ${userId}`),
             React.createElement(ModalCloseButton, { onClick: onClose })
         ),
-        React.createElement(ModalContent, { style: { padding: "16px 0", color: "var(--text-normal)" } }, body),
+        React.createElement(ModalContent, { style: { padding: "16px 0", color: textColor } },
+            lastChecked && React.createElement("div", {
+                style: {
+                    fontSize: "12px",
+                    marginBottom: "12px",
+                    color: lastChecked.color,
+                    fontWeight: "bold"
+                }
+            }, `Last checked: ${lastChecked.text}`),
+            body
+        ),
         React.createElement(ModalFooter, {},
             React.createElement("button", {
                 onClick: handleRunCheck,
@@ -172,6 +243,11 @@ function openDormModal(userId: string) {
 
 function DormBadgeComponent({ userId }: { userId: string; }) {
     const [flagData, setFlagData] = React.useState<any>(() => flagCache.get(userId));
+    const badgeSettings = settings.use([
+        "badgeSize", "badgeColorLoading", "badgeColorUnchecked", "badgeColorClean",
+        "badgeColorFlagged", "badgeColorCreator", "labelLoading", "labelUnchecked",
+        "labelClean", "labelFlagged", "labelCreator"
+    ]);
 
     React.useEffect(() => {
         setFlagData(flagCache.get(userId));
@@ -190,7 +266,7 @@ function DormBadgeComponent({ userId }: { userId: string; }) {
             fetch(`${API_BASE}?action=vencord_check_flag&discord_id=${userId}`)
                 .then(res => res.json())
                 .then(data => {
-                    const result = (data.success && data.checked) ? data : null;
+                    const result = data.success ? data : null;
                     updateCacheAndNotify(userId, result);
                 })
                 .catch(err => {
@@ -207,18 +283,43 @@ function DormBadgeComponent({ userId }: { userId: string; }) {
         };
     }, [userId]);
 
-    const isCreator = !!flagData?.dorm_creator;
-    const isLoading = flagData === undefined;
-    const isFlagged = !isCreator && !!flagData;
+    const isCreator = !!flagData?.dorm_creator;/* Thanks pizzaGPT for the idea to fix this issue! */
+    const isLoading = flagData === undefined;/* Thanks pizzaGPT for the idea to fix this issue! */
+    const isChecked = !!flagData?.checked;/* Thanks pizzaGPT for the idea to fix this issue! */
+    const isFlagged = !isCreator && !!(/* Thanks pizzaGPT for the idea to fix this issue! */
+        flagData?.okappiki?.flagged === true ||/* Thanks pizzaGPT for the idea to fix this issue! */
+        flagData?.rotector?.flagged === true ||/* Thanks pizzaGPT for the idea to fix this issue! */
+        flagData?.mococo?.flagged === true/* Thanks pizzaGPT for the idea to fix this issue! */
+    );
+
+    let color = badgeSettings.badgeColorUnchecked;
+    let label = badgeSettings.labelUnchecked;
+
+    if (isLoading) {
+        color = badgeSettings.badgeColorLoading;
+        label = badgeSettings.labelLoading;
+    } else if (isCreator) {
+        color = badgeSettings.badgeColorCreator;
+        label = badgeSettings.labelCreator;
+    } else if (!isChecked) {
+        color = badgeSettings.badgeColorUnchecked;
+        label = badgeSettings.labelUnchecked;
+    } else if (isFlagged) {
+        color = badgeSettings.badgeColorFlagged;
+        label = badgeSettings.labelFlagged;
+    } else {
+        color = badgeSettings.badgeColorClean;
+        label = badgeSettings.labelClean;
+    }
 
     return React.createElement("span", {
         style: {
             marginLeft: "6px",
             padding: "2px 6px",
-            backgroundColor: getBadgeColor(isCreator, isLoading, isFlagged),
+            backgroundColor: color,
             color: "#ffffff",
             borderRadius: "4px",
-            fontSize: "11px",
+            fontSize: `${badgeSettings.badgeSize}px`,
             fontWeight: "bold",
             verticalAlign: "middle",
             cursor: "pointer",
@@ -227,13 +328,13 @@ function DormBadgeComponent({ userId }: { userId: string; }) {
         },
         title: "Click for details",
         onClick: () => openDormModal(userId)
-    }, getBadgeLabel(isLoading, isCreator, isFlagged));
+    }, label);
 }
 
 const dormBadge: ProfileBadge = {
     id: "dorm-flag-badge",
     key: "dorm-flag-badge",
-    component: (props: any) => React.createElement(DormBadgeComponent, { userId: props.userId }),
+    component: (props: any) => React.createElement(DormBadgeComponent, { key: props.userId, userId: props.userId }),
     shouldShow: () => true
 };
 
@@ -242,6 +343,7 @@ export default definePlugin({
     description: "Allows you to check users for flags on the Detective Okappiki, Rotector and Mococo databases.",
     authors: [{ name: "DullBrad", id: 382599761145888769n }],
     dependencies: ["BadgeAPI", "MessageDecorationsAPI"],
+    settings,
 
     start() {
         addProfileBadge(dormBadge);
@@ -250,7 +352,7 @@ export default definePlugin({
             const authorId = props?.message?.author?.id;
             if (!authorId) return null;
 
-            return React.createElement(DormBadgeComponent, { userId: authorId });
+            return React.createElement(DormBadgeComponent, { key: authorId, userId: authorId });
         });
 
         logger.info("DORM Plugin started.");

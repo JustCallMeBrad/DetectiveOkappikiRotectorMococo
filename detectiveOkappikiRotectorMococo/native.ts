@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { CspPolicies } from "@main/csp";
+import { CspPolicies, ConnectSrc } from "@main/csp";
 
-// fyi, we use this so that discord doesn't get blocked cuz of my domain
-CspPolicies["okappiki.com"] = [...(CspPolicies["okappiki.com"] || []), "connect-src"];
+CspPolicies["okappiki.com"] = ConnectSrc;

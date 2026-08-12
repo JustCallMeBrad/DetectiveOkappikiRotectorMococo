@@ -12,6 +12,8 @@ Violation of any of the Terms of Use/Terms of Service(s) will result in your acc
 
 We are not officially endorsed by TASE/Mococo and/or Rotector.
 
+Credits to smokesevenstars/nyannyanfactory (the person behind https://menhera.st and https://tracked.moe) for an amazing update to the code!
+
 ~~~~~~ Intro ~~~~~~
 
 Detective Okappiki Rotector Mococo, in short DORM is a plugin developed by the creator of the Discord Bot known as "Detective Okappiki", DullBrad (https://okappiki.com/)
@@ -102,9 +104,10 @@ If your path is different just change the first command to that path!
 
 ~~~~~~ Credits ~~~~~~
 
-Plugin maker: DullBrad
+Plugin creator: DullBrad, smokesevenstars
 Detective Okappiki Creator: DullBrad
 Rotector Creator: jaxron (robalyx)
 Mococo (TASE) Creator: doqe (slopisekai)
+Credits to smokesevenstars/nyannyanfactory (the person behind https://menhera.st and https://tracked.moe) for an amazing update to the code!
 
 ~~~~~~ The End ~~~~~~

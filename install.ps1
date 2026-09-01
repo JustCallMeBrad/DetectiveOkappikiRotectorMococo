@@ -40,9 +40,9 @@ if (Test-Path $dormPath) {
     Get-Process node -ErrorAction SilentlyContinue | Wait-Process -Timeout 10 -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force $dormPath
 }
-Set-Location $documents
-New-Item -Path . -Name ".dorm" -ItemType "Directory"
-Set-Location .dorm
+New-Item -Path $dormPath -ItemType "Directory" | Out-Null
+(Get-Item $dormPath -Force).Attributes += 'Hidden'
+Set-Location $dormPath
 New-Item -Path . -Name "README.txt" -ItemType "File" -Value "DORM quick-install directory, do not delete unless you know what you're doing\nPlease do not put any other installation paths or files here, they may be deleted"
 
 wd "Creating Vencord directory"

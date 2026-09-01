@@ -5,6 +5,9 @@ Write-Output "Vencord is a modified Discord client, which is against Discord's T
 Write-Output "By pressing Enter you acknowledge and agree to all of the text above. If you do not, please exit the script"
 pause
 
+$documents = ([Environment]::GetFolderPath('MyDocuments'))
+$dormPath = Join-Path $documents ".dorm"
+
 function wd {
     param([string]$Message)
     Write-Output "[DORM] $Message"
@@ -23,15 +26,26 @@ winget install -e --id pnpm.pnpm --no-upgrade
 wd "Installing nodejs"
 winget install -e --id OpenJS.NodeJS --no-upgrade
 
-# create vencord directory
-wd "Creating Vencord directory"
-Set-Location $env:TEMP
-if (Test-Path "Vencord") {
-    wd "Existing Vencord directory found, removing it..."
+# create dorm directory
+wd "Creating DORM directory"
+if (Test-Path $dormPath) {
+    wd "Existing DORM directory found"
+    $confirm = Read-Host "The script will delete the current DORM installation directory (Documents\.dorm) and everything inside it to continue with the installation process. Continue? (y/n)"
+    if ($confirm -ne 'y') {
+        wd "Aborted"
+        Pop-Location
+        exit
+    }
+    wd "Reinstalling DORM"
     Get-Process node -ErrorAction SilentlyContinue | Wait-Process -Timeout 10 -ErrorAction SilentlyContinue
-    Remove-Item -Recurse -Force "Vencord"
+    Remove-Item -Recurse -Force $dormPath
 }
+Set-Location $documents
+New-Item -Path . -Name ".dorm" -ItemType "Directory"
+Set-Location .dorm
+New-Item -Path . -Name "README.txt" -ItemType "File" -Value "DORM quick-install directory, do not delete unless you know what you're doing\nPlease do not put any other installation paths or files here, they may be deleted"
 
+wd "Creating Vencord directory"
 git clone https://github.com/Vendicated/Vencord
 Set-Location Vencord
 
@@ -39,7 +53,7 @@ wd "Preparing installation"
 Get-Process -Name "Discord" -ErrorAction SilentlyContinue | Stop-Process -Force
 pnpm install --frozen-lockfile
 Set-Location src
-mkdir userplugins
+New-Item -Path . -Name "userplugins" -ItemType "Directory"
 Set-Location userplugins
 
 # install dorm
@@ -59,17 +73,6 @@ Set-Location ..\..
 pnpm build
 wd "You may be required to interact with the installer"
 pnpm inject
-
-# clean up
-wd "Cleaning up ..."
-if ($env:TEMP) {
-    Start-Sleep -Seconds 2
-    Set-Location $env:TEMP # prevent resource is in use error
-    Remove-Item -Recurse -Force "$env:TEMP\Vencord"
-}
-else {
-    Write-Error "TEMP environment variable not set, aborting cleanup" # lets just be safe so we dont delete something accidentally
-}
 
 Pop-Location
 wd "Done installing DORM, restart Discord if it is open. You may exit the window"

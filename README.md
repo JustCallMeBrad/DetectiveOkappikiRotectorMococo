@@ -118,8 +118,8 @@ Follow this **[guide](https://docs.vencord.dev/installing/custom-plugins/)**.
 
 # Credits
 
-Plugin creator: DullBrad, smokesevenstars
-Detective Okappiki Creator: DullBrad
-Rotector Creator: jaxron (robalyx)
-Mococo (TASE) Creator: doqe (slopisekai)
+Plugin creator: DullBrad, smokesevenstars  
+Detective Okappiki Creator: DullBrad  
+Rotector Creator: jaxron (robalyx)  
+Mococo (TASE) Creator: doqe (slopisekai)  
 Credits to smokesevenstars/nyannyanfactory (the person behind https://menhera.st and https://tracked.moe) for an amazing update to the code!

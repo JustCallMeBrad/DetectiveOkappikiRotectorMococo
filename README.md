@@ -49,14 +49,13 @@ In order to check which one is correct, you should always check someone you are 
 
 # Appealing
 
-If you've found yourself to be flagged or were alerted of being flagged then you can appeal by following these x steps:
+If you've found yourself to be flagged or were alerted of being flagged, you may wish to appeal your flag at each of the services respectively:
 
-1. Install the plugin onto your vencord client,
-2. Click the button that says "FLAGGED!" next to your username,
-3. Depending on what service you're flagged on, appeal with their respective appeals system,
-4. Once your appeal has been accepted and you should no longer be flagged on any of the systems, simply go back to your discord profile, press the "FLAGGED!" button again, and press "Click here to check!" in order to requeue yourself and remove the flagged status from your profile.
+> [Okappiki](https://okappiki.com/appeal)  
+> [Rotector](https://rotector.com)  
+> [Mococo (TASE)](https://discord.gg/VH4e8Wxfmd)
 
-Step 4 can also be used in order to check whether or not you are flagged on any of the three systems.
+Please verify that you are appealing for the correct service. For example, do not appeal on Okappiki for a Rotector flag. You may be flagged on multiple services.
 
 # Installing
 

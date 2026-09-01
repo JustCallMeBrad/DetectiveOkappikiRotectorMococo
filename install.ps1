@@ -43,7 +43,7 @@ if (Test-Path $dormPath) {
 New-Item -Path $dormPath -ItemType "Directory" | Out-Null
 (Get-Item $dormPath -Force).Attributes += 'Hidden'
 Set-Location $dormPath
-New-Item -Path . -Name "README.txt" -ItemType "File" -Value "DORM quick-install directory, do not delete unless you know what you're doing\nPlease do not put any other installation paths or files here, they may be deleted"
+New-Item -Path . -Name "README.txt" -ItemType "File" -Value "DORM quick-install directory, do not delete unless you know what you're doing\nPlease do not put any other installation paths or files here, they may be deleted" | Out-Null
 
 wd "Creating Vencord directory"
 git clone https://github.com/Vendicated/Vencord

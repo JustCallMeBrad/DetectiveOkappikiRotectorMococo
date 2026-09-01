@@ -123,3 +123,7 @@ Detective Okappiki Creator: DullBrad
 Rotector Creator: jaxron (robalyx)  
 Mococo (TASE) Creator: doqe (slopisekai)  
 Credits to smokesevenstars/nyannyanfactory (the person behind https://menhera.st and https://tracked.moe) for an amazing update to the code!
+
+# License
+
+GPL-3.0

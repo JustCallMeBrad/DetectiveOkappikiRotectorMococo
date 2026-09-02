@@ -1,3 +1,11 @@
+<h1 align="center">
+    DORM
+</h1>
+<p align="center">
+    Condo detection plugin for Discord <br>
+    <i>Stay safe with one click.</i>
+</p>
+
 # Disclaimer
 
 > [!CAUTION]
@@ -22,30 +30,52 @@ Credits to smokesevenstars/nyannyanfactory (the person behind https://menhera.st
 
 # Intro
 
+The plugin has been made for [Vencord](https://vencord.dev/) and only works alongside their directory as is normal for any and all userplugins for Vencord.
+
 Detective Okappiki Rotector Mococo, in short **DORM** is a plugin developed by the creator of the Discord Bot known as [Detective Okappiki](https://okappiki.com/), DullBrad
 
-All the credits regarding the TASE/Mococo and Rotector APIs go to their respective creators, [Doqe (slopisekai)](https://slop.isekai.fyi/) and [jaxron (robalyx)](https://rotector.com/).
+The plugin allows you to view flags on every user you come across, letting you easily check if they are flagged on 3 condo detection services:  
+[Okappiki](https://okappiki.com)  
+[Rotector](https://rotector.com)  
+[Mococo (TASE)](https://moco-co.org/)
 
-The plugin has been made for [Vencord](https://vencord.dev/) and only works alongside their directory as is normal for any and all userplugins for Vencord.
+<details>
+<summary><strong>What is a flag?</strong></summary>
+
+Flags are indicators that a user may have participated in **Condos** (Roblox games with sexual content) or other scenarios that might have endangered children.  
+The DORM userplugin allows you to check users against a list of databases provided by providers that flag users for this type of content using various methods, without the hassle of checking them on each. Whether you trust them or not is up to you.
+</details>
+
+<sub>All the credits regarding the TASE/Mococo and Rotector APIs go to their respective creators, [Doqe (slopisekai)](https://slop.isekai.fyi/) and [jaxron (robalyx)](https://rotector.com/).</sub>
 
 # Features
 
-The plugin allows you to view someone's DORM flag status, which is purely based on whether or not their Discord ID is flagged on either Detective Okappiki, Rotector or Mococo (TASE).
-
-Flag statuses will appear next to someone's username both in chat and on their profile, both popout and main. The flag status badge is clickable in all the places it appears in, and it'll send you to a modal popout which will then allow you to queue them for a flag on all three.
-
-The FLAGS themselves do not get stored, however the fact that someone is, at the time of the check, flagged, does. This ensures that flags persist without scraping/collecting any of the data from Detective Okappiki, Rotector OR Mococo (TASE), minus the necessary boolean flag status.
-
-So, for example, if I were to go into a discord chat and if then I clicked "NOT FLAGGED!" and "Click here to check!" the plugin itself would send a request to the https://okappiki.com/ website, in turn passing the Discord ID of the person you are checking through all three systems twice, temporarily storing their roblox data in order to ensure the most accurate data is outputted, after which it'd display the flag reasons, what they're flagged on (along with an appeal link to the system) and update their status to "FLAGGED!".
+| Feature | Implemented? |
+| --- | --- |
+| Rotector, Mococo, Okappiki checks? | ✅ |
+| EASI checks? | ❌ |
+| Automatic checking? | ⚠️ Only boolean after first check |
+| Familiar UI? | ✅ Familiar Discord tab styling |
+| Customizable appearance? | ✅ |
 
 # How to use
 
-In order to correctly use the plugin, you can't simply assume that everyone with "NOT FLAGGED!" is a safe user. "NOT FLAGGED!" can mean one of two things.
+The plugin's functionality is simple. Upon enabling the plugin, badges will appear next to users' names. These badges will have text indicating what flag status the user has.
 
-1. The person hasn't been checked via the plugin yet,
-2. The person isn't flagged in general.
+| Status | Description |
+| --- | --- |
+| Not checked | The user is not checked yet. It is unknown whether they are flagged or not |
+| Not flagged | The user is not flagged on all 3 services. This does not mean the user is inherently "safe" |
+| Flagged | The user is flagged on atleast one database |
+| Loading | Self-explanatory |
+| Creator | The creator of the DORM plugin |
 
-In order to check which one is correct, you should always check someone you are talking to, as it will not only help YOU ease your mind, but in a scenario that they are flagged, it will improve the plugin itself by updating our record on that person.
+> [!IMPORTANT]
+> Please do not treat flags as one piece of information. A flag is a heads up, and does not mean we have called the user a predator. **Flags should not replace your judgement and you should never assume flags are right.**
+
+You may click on a user's badge which will lead you to their profile. On this tab you can see the user's flag status and you may check the user, updating their flag status.
+
+Flag statuses that have been updated more than 7 days ago will be highlighted in yellow, same goes for 30 days except highlighted in red, as these flags may be outdated. Please do not be afraid to check a user before using the flag as information.
 
 # Appealing
 

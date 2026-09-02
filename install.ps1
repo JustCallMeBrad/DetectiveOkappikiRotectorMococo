@@ -1,5 +1,5 @@
 # disclaimer
-$c = (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/JustCallMeBrad/DetectiveOkappikiRotectorMococo/refs/heads/main/README.md" -UseBasicParsing).Content -split "`r?`n"; $s = ($c | Select-String -SimpleMatch "~~~~~~ Disclaimer! ~~~~~~").LineNumber; $e = ($c | Select-String -SimpleMatch "~~~~~~ Intro ~~~~~~").LineNumber; $c[$s..($e - 2)]
+$c = (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/JustCallMeBrad/DetectiveOkappikiRotectorMococo/refs/heads/main/README.md" -UseBasicParsing).Content -split "`r?`n"; $s = ($c | Select-String -SimpleMatch "# Disclaimer").LineNumber; $e = ($c | Select-String -SimpleMatch "# Intro").LineNumber; $c[$s..($e - 2)]
 Write-Output "DORM is licensed under GPL-3.0"
 Write-Output "Vencord is a modified Discord client, which is against Discord's ToS (https://discord.com/terms). Use at your own risk"
 Write-Output "By pressing Enter you acknowledge and agree to all of the text above. If you do not, please exit the script"

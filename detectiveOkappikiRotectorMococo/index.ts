@@ -160,6 +160,66 @@ function formatLastChecked(isoString: string | undefined) {
     return { text: checkedDate.toLocaleString(), color };
 }
 
+function formatUnixOrIso(value: any): string | null {
+    if (value == null) return null;
+    const date = typeof value === "number"
+        ? new Date(value < 1e12 ? value * 1000 : value)
+        : new Date(value);
+    return isNaN(date.getTime()) ? null : date.toLocaleString();
+}
+
+function DormSourceDetailModal({ source, flagData, onClose, transitionState }: any) {
+    const { modalTextColor } = settings.use(["modalTextColor"]);
+    const color = modalTextColor || "var(--text-normal)";
+    const sourceKey = source.toLowerCase();
+    const sourceData = flagData?.[sourceKey];
+    const guilds = sourceData?.details?.guilds ?? [];
+
+    let body: React.ReactNode;
+
+    if (sourceKey === "okappiki") {
+        const reasonText: string = sourceData?.reason || "No additional details provided.";
+        const lines = reasonText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
+        body = React.createElement("ul", { style: { margin: 0, paddingLeft: "20px", color } },
+            lines.map((line: string, i: number) =>
+                React.createElement("li", { key: i, style: { marginBottom: "6px", lineHeight: "1.4" } }, line)
+            )
+        );
+    } else if (guilds.length > 0) {
+        body = React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "10px" } },
+            guilds.map((g: any, i: number) =>
+                React.createElement("div", {
+                    key: i,
+                    style: {
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        backgroundColor: "color-mix(in oklab, var(--text-default) 6%, transparent)",
+                        border: "1px solid color-mix(in oklab, var(--text-default) 12%, transparent)"
+                    }
+                },
+                    React.createElement("div", { style: { fontWeight: "bold", marginBottom: "4px", color } }, g.name || "Unknown server"),
+                    g.firstSeen && React.createElement("div", { style: { fontSize: "12px", color: "var(--text-muted)" } }, `First seen: ${formatUnixOrIso(g.firstSeen)}`),
+                    g.lastSeen && React.createElement("div", { style: { fontSize: "12px", color: "var(--text-muted)" } }, `Last seen: ${formatUnixOrIso(g.lastSeen)}`)
+                )
+            )
+        );
+    } else {
+        body = React.createElement("div", { style: { color } }, sourceData?.reason || "No additional details provided.");
+    }
+
+    return React.createElement(ModalRoot, { transitionState, size: ModalSize.SMALL },
+        React.createElement(ModalHeader, { style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" } },
+            React.createElement("div", { style: { fontWeight: "bold", fontSize: "16px", color } }, `${source} details`),
+            React.createElement(ModalCloseButton, { onClick: onClose })
+        ),
+        React.createElement(ModalContent, { style: { padding: "16px 0" } }, body)
+    );
+}
+
+function openDormSourceDetail(source: string, flagData: any) {
+    openModal(props => React.createElement(DormSourceDetailModal, { ...props, source, flagData }));
+}
+
 function DormModalContent({ userId, onClose, transitionState }: any) {
     const [data, setData] = React.useState<any>(flagCache.get(userId) ?? null);
     const [checking, setChecking] = React.useState(false);
@@ -192,7 +252,10 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
                     borderBottom: i < segments.length - 1 ? "1px solid var(--background-modifier-accent)" : "none"
                 }
             },
-                React.createElement("div", { style: { fontWeight: "bold", marginBottom: "4px", color: textColor } }, segment.source),
+                React.createElement("div", {
+                    style: { fontWeight: "bold", marginBottom: "4px", color: textColor, cursor: "pointer", textDecoration: "underline" },
+                    onClick: () => openDormSourceDetail(segment.source, data)
+                }, segment.source),
                 React.createElement("div", { style: { whiteSpace: "pre-wrap", marginBottom: "8px", color: textColor } }, Parser.parse(segment.reason)),
                 React.createElement("a", {
                     href: segment.appealUrl || undefined,
@@ -535,10 +598,15 @@ function DormTab({ userId }: { userId: string; }) {
                             gap: "10px"
                         }
                     },
-                        React.createElement(Text, {
-                            variant: "text-md/semibold",
-                            style: { color: "var(--text-default)" }
-                        }, segment.source),
+                        React.createElement("div", {
+                            style: { cursor: "pointer" },
+                            onClick: () => openDormSourceDetail(segment.source, data)
+                        },
+                            React.createElement(Text, {
+                                variant: "text-md/semibold",
+                                style: { color: "var(--text-default)", textDecoration: "underline" }
+                            }, segment.source)
+                        ),
                         pill
                     ),
                     React.createElement(Text, {

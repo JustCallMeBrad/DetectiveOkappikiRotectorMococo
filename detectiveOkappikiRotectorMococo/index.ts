@@ -11,7 +11,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import definePlugin, { OptionType } from "@utils/types";
-import { findByPropsLazy, findCssClassesLazy } from "@webpack";
+import { findCssClassesLazy } from "@webpack";
 import { Parser, React } from "@webpack/common";
 
 const TEXT_VARIANTS: Record<string, [string, number]> = {
@@ -27,7 +27,6 @@ function Text({ variant, style, children }: { variant?: string; style?: React.CS
 }
 
 const TabBarClasses = findCssClassesLazy("tabPanelScroller", "tabBarPanel");
-const ProfileModalActions = findByPropsLazy("openUserProfileModal");
 const IS_PATCHED = Symbol("UserFlags.Patched");
 
 const logger = new Logger("DORM");
@@ -122,7 +121,6 @@ function buildReasonSegments(flagData: any) {
     return segments;
 }
 
-/** True once a check result is available (the API no longer returns per-source reasons). */
 function hasDetailedReasons(flagData: any): boolean {
     return !!flagData?.checked;
 }
@@ -133,7 +131,7 @@ function runFullCheck(userId: string) {
         .then(data => {
             if (!data.success) return null;
 
-            const result = { ...flagCache.get(userId), ...data, checked: true };
+            const result = { ...flagCache.get(userId), ...data, checked: true, full: true };
             updateCacheAndNotify(userId, result);
             return result;
         })
@@ -162,16 +160,23 @@ function formatLastChecked(isoString: string | undefined) {
 function DormModalContent({ userId, onClose, transitionState }: any) {
     const [data, setData] = React.useState<any>(flagCache.get(userId) ?? null);
     const [checking, setChecking] = React.useState(false);
+    const [failed, setFailed] = React.useState(false);
     const { modalTextColor } = settings.use(["modalTextColor"]);
+
+    React.useEffect(() => {
+        if (!flagCache.get(userId)?.full) handleRunCheck();
+    }, [userId]);
 
     const textColor = modalTextColor || "var(--text-normal)";
     const lastChecked = formatLastChecked(data?.last_updated);
 
     function handleRunCheck() {
         setChecking(true);
+        setFailed(false);
         runFullCheck(userId).then(result => {
             setChecking(false);
-            setData(result);
+            if (result) setData(result);
+            else setFailed(true);
         });
     }
 
@@ -179,7 +184,11 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
     const segments = buildReasonSegments(data);
 
     let body: React.ReactNode;
-    if (isCreator) {
+    if (checking && !data?.full) {
+        body = React.createElement("div", { style: { color: textColor } }, "Checking...");
+    } else if (failed && !data?.full) {
+        body = React.createElement("div", { style: { color: textColor } }, "Could not run the check (too many requests or a server error). Try again in a minute.");
+    } else if (isCreator) {
         body = React.createElement("div", { style: { color: textColor } }, "hi i made this thing");
     } else if (segments.length > 0) {
         body = segments.map((segment, i) =>
@@ -264,6 +273,7 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
 }
 
 function openDormModal(userId: string) {
+    logger.info("Opening DORM popup for", userId);
     openModal(props => React.createElement(DormModalContent, { ...props, userId }));
 }
 
@@ -358,7 +368,7 @@ function DormBadgeComponent({ userId }: { userId: string; }) {
             boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
         },
         title: "Click for details",
-        onClick: () => ProfileModalActions.openUserProfileModal({ userId, tabSection: "USER_FLAGS" })
+        onClick: () => openDormModal(userId)
     }, label);
 }
 
@@ -488,7 +498,7 @@ function DormTab({ userId }: { userId: string; }) {
                     backgroundColor: busy
                         ? "color-mix(in oklab, var(--text-default) 12%, transparent)"
                         : "color-mix(in oklab, var(--text-default) 8%, transparent)",
-                    color: "var(--interactive-normal)", /* ← important */
+                    color: "var(--interactive-normal)",
                     cursor: busy ? "default" : "pointer",
                     opacity: busy ? 0.5 : 1,
                     transition: "background-color 0.15s ease, color 0.15s ease",
@@ -592,7 +602,13 @@ function DormTab({ userId }: { userId: string; }) {
 const dormBadge: ProfileBadge = {
     id: "dorm-flag-badge",
     key: "dorm-flag-badge",
+    description: "DORM flag status (click to check)",
     component: (props: any) => React.createElement(DormBadgeComponent, { key: props.userId, userId: props.userId }),
+    onClick: (_event: any, props: any) => {
+        const userId = props?.userId ?? props?.user?.id;
+        logger.info("DORM profile badge clicked", { userId, props });
+        if (userId) openDormModal(userId);
+    },
     shouldShow: () => true
 };
 
@@ -651,7 +667,7 @@ export default definePlugin({
             return React.createElement(DormBadgeComponent, { key: authorId, userId: authorId });
         });
 
-        logger.info("DORM Plugin started.");
+        logger.info("DORM Plugin started (build: badge-click popup v4).");
     },
 
     stop() {

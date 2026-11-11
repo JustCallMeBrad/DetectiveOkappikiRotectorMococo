@@ -12,7 +12,19 @@ import { Logger } from "@utils/Logger";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import definePlugin, { OptionType } from "@utils/types";
 import { findByPropsLazy, findCssClassesLazy } from "@webpack";
-import { Parser, React, Text } from "@webpack/common";
+import { Parser, React } from "@webpack/common";
+
+const TEXT_VARIANTS: Record<string, [string, number]> = {
+    "text-xs/medium": ["12px", 500],
+    "text-sm/normal": ["14px", 400],
+    "text-sm/semibold": ["14px", 600],
+    "text-md/semibold": ["16px", 600]
+};
+
+function Text({ variant, style, children }: { variant?: string; style?: React.CSSProperties; children?: React.ReactNode; }) {
+    const [fontSize, fontWeight] = TEXT_VARIANTS[variant ?? ""] ?? ["14px", 400];
+    return React.createElement("div", { style: { fontSize, fontWeight, ...style } }, children);
+}
 
 const TabBarClasses = findCssClassesLazy("tabPanelScroller", "tabBarPanel");
 const ProfileModalActions = findByPropsLazy("openUserProfileModal");
@@ -21,6 +33,7 @@ const IS_PATCHED = Symbol("UserFlags.Patched");
 const logger = new Logger("DORM");
 const flagCache = new Map<string, any>();
 const fetchingUsers = new Set<string>();
+const retryAt = new Map<string, number>();
 const listeners = new Set<(userId?: string) => void>();
 
 const API_BASE = "https://okappiki.com/backend/api.php";
@@ -102,30 +115,16 @@ const APPEAL_LINKS = {
 function buildReasonSegments(flagData: any) {
     const segments: { source: string; reason: string; appealUrl: string; }[] = [];
 
-    if (flagData?.okappiki?.flagged) segments.push({ source: "Okappiki", reason: flagData.okappiki.reason || "Flagged", appealUrl: APPEAL_LINKS.okappiki });
-    if (flagData?.rotector?.flagged) segments.push({ source: "Rotector", reason: flagData.rotector.reason || "Flagged", appealUrl: APPEAL_LINKS.rotector });
-    if (flagData?.mococo?.flagged) segments.push({ source: "Mococo", reason: flagData.mococo.reason || "Flagged", appealUrl: APPEAL_LINKS.mococo });
+    if (flagData?.okappiki?.flagged) segments.push({ source: "Okappiki", reason: `Flagged by Detective Okappiki.\nTo appeal: ${APPEAL_LINKS.okappiki}`, appealUrl: APPEAL_LINKS.okappiki });
+    if (flagData?.rotector?.flagged) segments.push({ source: "Rotector", reason: `Flagged by Rotector.\nTo appeal: ${APPEAL_LINKS.rotector}`, appealUrl: APPEAL_LINKS.rotector });
+    if (flagData?.mococo?.flagged) segments.push({ source: "Mococo", reason: `Flagged by Mococo (TASE).\nTo appeal: ${APPEAL_LINKS.mococo}`, appealUrl: APPEAL_LINKS.mococo });
 
     return segments;
 }
 
-/** Returns true only when we have full detailed reasons (or the user is clean / creator). */
+/** True once a check result is available (the API no longer returns per-source reasons). */
 function hasDetailedReasons(flagData: any): boolean {
-    if (!flagData) return false;
-
-    const sources = [
-        flagData.okappiki,
-        flagData.rotector,
-        flagData.mococo
-    ];
-
-    for (const src of sources) {
-        if (src?.flagged === true && (typeof src.reason !== "string" || !src.reason.trim())) {
-            return false;
-        }
-    }
-
-    return !!flagData.checked;
+    return !!flagData?.checked;
 }
 
 function runFullCheck(userId: string) {
@@ -134,7 +133,7 @@ function runFullCheck(userId: string) {
         .then(data => {
             if (!data.success) return null;
 
-            const result = { ...data, checked: true };
+            const result = { ...flagCache.get(userId), ...data, checked: true };
             updateCacheAndNotify(userId, result);
             return result;
         })
@@ -158,66 +157,6 @@ function formatLastChecked(isoString: string | undefined) {
     else if (ageDays >= 7) color = "#faa61a";
 
     return { text: checkedDate.toLocaleString(), color };
-}
-
-function formatUnixOrIso(value: any): string | null {
-    if (value == null) return null;
-    const date = typeof value === "number"
-        ? new Date(value < 1e12 ? value * 1000 : value)
-        : new Date(value);
-    return isNaN(date.getTime()) ? null : date.toLocaleString();
-}
-
-function DormSourceDetailModal({ source, flagData, onClose, transitionState }: any) {
-    const { modalTextColor } = settings.use(["modalTextColor"]);
-    const color = modalTextColor || "var(--text-normal)";
-    const sourceKey = source.toLowerCase();
-    const sourceData = flagData?.[sourceKey];
-    const guilds = sourceData?.details?.guilds ?? [];
-
-    let body: React.ReactNode;
-
-    if (sourceKey === "okappiki") {
-        const reasonText: string = sourceData?.reason || "No additional details provided.";
-        const lines = reasonText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
-        body = React.createElement("ul", { style: { margin: 0, paddingLeft: "20px", color } },
-            lines.map((line: string, i: number) =>
-                React.createElement("li", { key: i, style: { marginBottom: "6px", lineHeight: "1.4" } }, line)
-            )
-        );
-    } else if (guilds.length > 0) {
-        body = React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "10px" } },
-            guilds.map((g: any, i: number) =>
-                React.createElement("div", {
-                    key: i,
-                    style: {
-                        padding: "10px 12px",
-                        borderRadius: "8px",
-                        backgroundColor: "color-mix(in oklab, var(--text-default) 6%, transparent)",
-                        border: "1px solid color-mix(in oklab, var(--text-default) 12%, transparent)"
-                    }
-                },
-                    React.createElement("div", { style: { fontWeight: "bold", marginBottom: "4px", color } }, g.name || "Unknown server"),
-                    g.firstSeen && React.createElement("div", { style: { fontSize: "12px", color: "var(--text-muted)" } }, `First seen: ${formatUnixOrIso(g.firstSeen)}`),
-                    g.lastSeen && React.createElement("div", { style: { fontSize: "12px", color: "var(--text-muted)" } }, `Last seen: ${formatUnixOrIso(g.lastSeen)}`)
-                )
-            )
-        );
-    } else {
-        body = React.createElement("div", { style: { color } }, sourceData?.reason || "No additional details provided.");
-    }
-
-    return React.createElement(ModalRoot, { transitionState, size: ModalSize.SMALL },
-        React.createElement(ModalHeader, { style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" } },
-            React.createElement("div", { style: { fontWeight: "bold", fontSize: "16px", color } }, `${source} details`),
-            React.createElement(ModalCloseButton, { onClick: onClose })
-        ),
-        React.createElement(ModalContent, { style: { padding: "16px 0" } }, body)
-    );
-}
-
-function openDormSourceDetail(source: string, flagData: any) {
-    openModal(props => React.createElement(DormSourceDetailModal, { ...props, source, flagData }));
 }
 
 function DormModalContent({ userId, onClose, transitionState }: any) {
@@ -253,8 +192,7 @@ function DormModalContent({ userId, onClose, transitionState }: any) {
                 }
             },
                 React.createElement("div", {
-                    style: { fontWeight: "bold", marginBottom: "4px", color: textColor, cursor: "pointer", textDecoration: "underline" },
-                    onClick: () => openDormSourceDetail(segment.source, data)
+                    style: { fontWeight: "bold", marginBottom: "4px", color: textColor }
                 }, segment.source),
                 React.createElement("div", { style: { whiteSpace: "pre-wrap", marginBottom: "8px", color: textColor } }, Parser.parse(segment.reason)),
                 React.createElement("a", {
@@ -348,18 +286,23 @@ function DormBadgeComponent({ userId }: { userId: string; }) {
 
         listeners.add(onUpdate);
 
-        if (!flagCache.has(userId) && !fetchingUsers.has(userId)) {
+        if (!flagCache.has(userId) && !fetchingUsers.has(userId) && Date.now() >= (retryAt.get(userId) ?? 0)) {
             fetchingUsers.add(userId);
 
             fetch(`${API_BASE}?action=vencord_check_flag&discord_id=${userId}`)
                 .then(res => res.json())
                 .then(data => {
-                    const result = data.success ? data : null;
-                    updateCacheAndNotify(userId, result);
+                    if (data.success) {
+                        updateCacheAndNotify(userId, data);
+                    } else {
+                        retryAt.set(userId, Date.now() + 60_000);
+                        listeners.forEach(cb => cb(userId));
+                    }
                 })
                 .catch(err => {
                     logger.error("dorm quick check failed", err);
-                    updateCacheAndNotify(userId, null);
+                    retryAt.set(userId, Date.now() + 60_000);
+                    listeners.forEach(cb => cb(userId));
                 })
                 .finally(() => {
                     fetchingUsers.delete(userId);
@@ -372,7 +315,7 @@ function DormBadgeComponent({ userId }: { userId: string; }) {
     }, [userId]);
 
     const isCreator = !!flagData?.dorm_creator;
-    const isLoading = flagData === undefined;
+    const isLoading = flagData === undefined && Date.now() >= (retryAt.get(userId) ?? 0);
     const isChecked = !!flagData?.checked;
     const isFlagged = !isCreator && !!(
         flagData?.okappiki?.flagged === true ||
@@ -598,15 +541,10 @@ function DormTab({ userId }: { userId: string; }) {
                             gap: "10px"
                         }
                     },
-                        React.createElement("div", {
-                            style: { cursor: "pointer" },
-                            onClick: () => openDormSourceDetail(segment.source, data)
-                        },
-                            React.createElement(Text, {
-                                variant: "text-md/semibold",
-                                style: { color: "var(--text-default)", textDecoration: "underline" }
-                            }, segment.source)
-                        ),
+                        React.createElement(Text, {
+                            variant: "text-md/semibold",
+                            style: { color: "var(--text-default)" }
+                        }, segment.source),
                         pill
                     ),
                     React.createElement(Text, {
